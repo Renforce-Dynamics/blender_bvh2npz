@@ -16,7 +16,6 @@ Thanks for the code sharing of the following open-source repositories:
 
 
 ```
-git clone https://github.com/Beat-in-our-hearts/amass_blender.git
 cd amass_blender
 
 conda create -n amass_blender python=3.7

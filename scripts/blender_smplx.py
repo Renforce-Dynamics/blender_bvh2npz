@@ -7,8 +7,7 @@ import math
 # get context
 scene = bpy.context.scene
 
-armature_name_list = ['SMPLX-neutral.halfsquat', 'SMPLX-neutral.legswing', 'SMPLX-neutral.armswing']
-armature_name = armature_name_list[2]
+armature_name = ""
 armature_obj = bpy.data.objects[armature_name]
 
 # define 22dof body names
@@ -27,19 +26,11 @@ face_names = ['jaw', 'left_eye_smplhf', 'right_eye_smplhf']
 bone_names = body_names + hand_names + face_names
 
 # define frame
-start_frame = {
-    'SMPLX-neutral.halfsquat': 4,
-    'SMPLX-neutral.legswing': 4, 
-    'SMPLX-neutral.armswing': 4,
-}
+start_frame = 0
 
-end_frame = {
-    'SMPLX-neutral.halfsquat': 2935,
-    'SMPLX-neutral.legswing': 1400, 
-    'SMPLX-neutral.armswing': 570,
-}
+end_frame = 500
 
-num_frames = end_frame[armature_name] - start_frame[armature_name] + 1
+num_frames = end_frame - start_frame + 1
 
 root_orient = np.zeros((num_frames, 3), dtype=np.float32) # 根骨骼旋转
 trans = np.zeros((num_frames, 3), dtype=np.float32) # 全局平移
@@ -48,7 +39,7 @@ pose_body = np.zeros((num_frames, 63), dtype=np.float32) # 身体姿态 (21 join
 pose_hand = np.zeros((num_frames, 90), dtype=np.float32) # 手部姿态 (30 joints * 3)
 pose_face = np.zeros((num_frames, 9), dtype=np.float32) # 面部姿态 (3 joints * 3)
 
-for frame_id in range(start_frame[armature_name], end_frame[armature_name]+1):
+for frame_id in range(start_frame, end_frame+1):
     if frame_id % 100 == 0:
         print(f"Processing frame {frame_id}/{num_frames}")
         
@@ -61,10 +52,10 @@ for frame_id in range(start_frame[armature_name], end_frame[armature_name]+1):
     rotation_matrix = pelvis_global_matrix.to_3x3().normalized()
     rotation_quaternion = rotation_matrix.to_quaternion()
     axis, angle = rotation_quaternion.to_axis_angle()
-    root_orient[frame_id - start_frame[armature_name]] = axis * angle 
+    root_orient[frame_id - start_frame] = axis * angle 
     
     # trans
-    trans[frame_id - start_frame[armature_name]] = pelvis_global_matrix.to_translation()
+    trans[frame_id - start_frame] = pelvis_global_matrix.to_translation()
     
     # poses
     for bone_name in bone_names[1:]:  # skip pelvis
@@ -78,7 +69,7 @@ for frame_id in range(start_frame[armature_name], end_frame[armature_name]+1):
         axis, angle = local_rotation_quaternion.to_axis_angle()
         axis_angle = axis * angle
         joint_index = bone_names.index(bone_name) - 1
-        poses[frame_id - start_frame[armature_name], joint_index*3:joint_index*3+3] = [axis_angle.x, axis_angle.y, axis_angle.z]
+        poses[frame_id - start_frame, joint_index*3:joint_index*3+3] = [axis_angle.x, axis_angle.y, axis_angle.z]
 
 # split poses into body, hand, face
 pose_body = poses[:, :63]
